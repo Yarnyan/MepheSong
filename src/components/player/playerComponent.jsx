@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import HomeIcon from '@mui/icons-material/Home';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonIcon from '@mui/icons-material/Person';
@@ -12,6 +12,11 @@ import { trending } from '../../data/Trending';
 import { genres } from '../../data/Genres';
 import { playlist } from '../../data/Playlist';
 import { useDispatch, useSelector } from 'react-redux';
+import LinearProgress from '@mui/material/LinearProgress';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import VolumeDownIcon from '@mui/icons-material/VolumeDown';
 export default function PlayerComponent() {
     const chartItems = useSelector((state) => state.charts)
     const trendingItems = useSelector((state) => state.trending)
@@ -35,10 +40,10 @@ export default function PlayerComponent() {
     }
     const saveSong = (item) => {
         dispatch({ type: 'SET_LIKED_SONGS', payload: item })
-        const uniqueId = `${item.album}_${item.name}`; 
+        const uniqueId = `${item.album}_${item.name}`;
         setLikedStatus((prevStatus) => ({
-          ...prevStatus,
-          [uniqueId]: !prevStatus[uniqueId],
+            ...prevStatus,
+            [uniqueId]: !prevStatus[uniqueId],
         }));
 
     }
@@ -154,7 +159,7 @@ export default function PlayerComponent() {
                                                 <div className='Player__item-time'>{item.time}</div>
                                             </div>
                                             <div className='Player__item-like' onClick={() => saveSong(item)}>
-                                                <FavoriteIcon className={likedStatus[`${item.album}_${item.name}`] ? 'liked' : ''}/>
+                                                <FavoriteIcon className={likedStatus[`${item.album}_${item.name}`] ? 'liked' : ''} />
                                             </div>
                                         </div>
                                     )
@@ -169,13 +174,9 @@ export default function PlayerComponent() {
                                 </div>
                                 <div className="Player__trending-items">
                                     {trendingItems.map((item, index) => {
-                                        // const randomColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
                                         return (
                                             <div className="Player__trending-item" key={index}>
                                                 <img src={item.img} alt="" />
-                                                {/* <div className='Trending-title'>
-                                                    {item.name}
-                                                </div> */}
                                             </div>
                                         )
                                     })}
@@ -203,17 +204,39 @@ export default function PlayerComponent() {
                 </div>
             </div>
             <div className={`Player__footer ${isActive ? 'active' : null}`}>
-                <div className='Player__item-name' style={{ width: '200px' }}>
-                    <div>
-                        <img src={currentSong.img} alt="" />
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <div className='Player__item-name' style={{ width: '200px' }}>
+                        <div>
+                            <img src={currentSong.img} alt="" />
+                        </div>
+                        <div className='song__avtor'>
+                            <div style={{ color: '#fff' }}>{currentSong.album}</div>
+                            <div className='Player__song-name'>{currentSong.name}</div>
+                        </div>
                     </div>
-                    <div className='song__avtor'>
-                        <div style={{ color: '#fff' }}>{currentSong.album}</div>
-                        <div className='Player__song-name'>{currentSong.name}</div>
+                    <div className='Player__item-like' onClick={() => saveSong(currentSong)}>
+                        <FavoriteIcon className={likedStatus[`${currentSong.album}_${currentSong.name}`] ? 'liked' : ''} />
                     </div>
                 </div>
-                <div className='Player__item-like' onClick={() => saveSong(currentSong)}>
-                    <FavoriteIcon className={likedStatus[`${currentSong.album}_${currentSong.name}`] ? 'liked' : ''}/>
+                <div className='Player__item-audio'>
+                    <div className='Player__audio-btn'>
+                        <button className='audio__btn-prev'>
+                            <ArrowBackIosNewIcon fontSize='small' />
+                        </button>
+                        <button className='audio__btn-start'>
+                            <PlayArrowIcon fontSize='large'/>
+                        </button>
+                        <button className='audio__btn-next'>
+                            <ArrowForwardIosIcon fontSize='small' />
+                        </button>
+                    </div>
+                    <LinearProgress variant="determinate" value={50} className='play__bar'/>
+                </div>
+                <div className="Player__item-volume">
+                    <div>
+                        <VolumeDownIcon />
+                    </div>
+                        <LinearProgress variant="determinate" value={50} className='volume__bar'/>
                 </div>
             </div>
         </div>
