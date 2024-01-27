@@ -169,13 +169,13 @@ export default function PlayerComponent() {
                                 </div>
                                 <div className="Player__trending-items">
                                     {trendingItems.map((item, index) => {
-                                        const randomColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+                                        // const randomColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
                                         return (
                                             <div className="Player__trending-item" key={index}>
                                                 <img src={item.img} alt="" />
-                                                <div className='Trending-title' style={{ backgroundColor: randomColor }}>
+                                                {/* <div className='Trending-title'>
                                                     {item.name}
-                                                </div>
+                                                </div> */}
                                             </div>
                                         )
                                     })}
