@@ -424,15 +424,16 @@ body {
 
 .Player__item-audio {
     width: 500px;
-    height: 100%;
+    height: 55px;
 }
 
-.MuiLinearProgress-bar {
+.css-14pt78w-MuiSlider-rail {
+    background-color: #25232F!important;
+}
+
+.css-1gv0vcd-MuiSlider-track {
     background-color: #ACABAF !important;
-}
-
-.css-eglki6-MuiLinearProgress-root {
-    background-color: #25232F !important;
+    border: none !important;
     width: 100%;
 }
 
@@ -462,6 +463,7 @@ body {
 
 .Player__item-audio button {
     background-color: transparent;
+    height: 23px;
 }
 
 .Player__item-volume {
@@ -480,9 +482,27 @@ body {
 
 .volume__bar {
     width: 100px !important;
-    margin-left: 10px;
+    margin-left: 20px;
     cursor: pointer;
-    .MuiLinearProgress-bar {
+    .MuiSlider-root {
         background-color: #3E67A7 !important;
     }
+}
+
+.css-jx1sa5-MuiSlider-thumb {
+    display: none !important;
+}
+
+.audio__slider {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.audio__slider p {
+    font-size: 16px;
+    color: var(--textColor);
+    font-weight: 200;
+    margin: 0 10px;
 }

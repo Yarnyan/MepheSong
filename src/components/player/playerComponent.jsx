@@ -6,17 +6,20 @@ import AnchorIcon from '@mui/icons-material/Anchor';
 import AddIcon from '@mui/icons-material/Add';
 import SettingsIcon from '@mui/icons-material/Settings';
 import FavoriteIcon from '@mui/icons-material/Favorite';
+import IconButton from '@mui/material/IconButton';
 import { Link } from 'react-router-dom'
 import { chart } from '../../data/chart';
 import { trending } from '../../data/Trending';
 import { genres } from '../../data/Genres';
 import { playlist } from '../../data/Playlist';
 import { useDispatch, useSelector } from 'react-redux';
-import LinearProgress from '@mui/material/LinearProgress';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import Slider from '@mui/material/Slider';
+import PauseRounded from '@mui/icons-material/PauseRounded';
+import PlayArrowRounded from '@mui/icons-material/PlayArrowRounded';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import VolumeDownIcon from '@mui/icons-material/VolumeDown';
+import VolumeMuteIcon from '@mui/icons-material/VolumeMute';
 export default function PlayerComponent() {
     const chartItems = useSelector((state) => state.charts)
     const trendingItems = useSelector((state) => state.trending)
@@ -26,7 +29,15 @@ export default function PlayerComponent() {
     const likedSongs = useSelector((state) => state.likedSongs)
     const [likedStatus, setLikedStatus] = useState({});
     const [isActive, setIsActive] = useState(false)
+    const [paused, setPaused] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [position, setPosition] = useState(0);
+    const [volume, setVolume] = useState(50);
+    const [timerActive, setTimerActive] = useState(false);
+    const [savedPosition, setSavedPosition] = useState(0);
+    const [currentSongIndex, setCurrentSongIndex] = useState(0);
+    const audioRef = useRef(new Audio());
+    const prevVolume = useRef(null);
     const dispatch = useDispatch()
     useEffect(() => {
         dispatch({ type: 'SET_CHARTS', payload: chart })
@@ -34,9 +45,17 @@ export default function PlayerComponent() {
         dispatch({ type: 'SET_GENRES', payload: genres })
         dispatch({ type: 'SET_PLAYLIST', payload: playlist })
     }, [])
-    const playSong = (item) => {
+    const playSong = (item, index) => {
         dispatch({ type: 'SET_CURRENT_SONG', payload: item })
+        setPosition(0)
         setIsActive(true)
+        setCurrentSongIndex(index);
+        audioRef.current.addEventListener('loadeddata', () => {
+            if (isActive && !paused) {
+                audioRef.current.play();
+            }
+        });
+        audioRef.current.src = item.music;
     }
     const saveSong = (item) => {
         dispatch({ type: 'SET_LIKED_SONGS', payload: item })
@@ -52,6 +71,76 @@ export default function PlayerComponent() {
             item.album.toLowerCase().includes(searchQuery.toLowerCase()) ||
             item.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
+    function formatDuration(value) {
+        const minute = Math.floor(value / 60);
+        const secondLeft = value - minute * 60;
+        return `${minute}:${secondLeft < 10 ? `0${secondLeft}` : secondLeft}`;
+    }
+    const formatTime = (seconds) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        const formattedTime = `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        return formattedTime;
+    };
+    useEffect(() => {
+        setSavedPosition(audioRef.current.currentTime);
+        audioRef.current.src = currentSong.music;
+        if (isActive && !paused) {
+            setTimerActive(true);
+            audioRef.current.currentTime = savedPosition;
+            audioRef.current.play();
+            const timerInterval = setInterval(() => {
+                setPosition((prevPosition) => {
+                    if (prevPosition + 1 > currentSong.time) {
+                        clearInterval(timerInterval);
+                        setTimerActive(false);
+                        return 0;
+                    }
+                    return prevPosition + 1;
+                });
+            }, 1000);
+            return () => {
+                clearInterval(timerInterval);
+                setTimerActive(false);
+            };
+        } else if (isActive) {
+            audioRef.current.currentTime = savedPosition;
+        } else {
+            audioRef.current.pause();
+            setTimerActive(false);
+        }
+    }, [isActive, paused, currentSong.music, savedPosition, currentSong.time]);
+    
+    
+    const handleVolumeChange = (event, newValue) => {
+        audioRef.current.volume = volume / 100;
+        event.preventDefault();
+        setVolume(newValue);
+    };
+    const muteSong = () => {
+        const newVolume = volume === 0 ? prevVolume.current || 50 : 0;
+        setVolume(newVolume);
+        audioRef.current.volume = newVolume / 100;
+        prevVolume.current = volume === 0 ? 50 : volume
+    }
+
+    const playNextSong = () => {
+        const nextIndex = (currentSongIndex + 1) % chartItems.length;
+        if (chartItems[nextIndex]) {
+            playSong(chartItems[nextIndex], nextIndex);
+        } else {
+            playSong(chartItems[0], 0);
+        }
+    };
+    const playPreviousSong = () => {
+        const prevIndex = (currentSongIndex - 1 + chartItems.length) % chartItems.length;
+
+        if (chartItems[prevIndex]) {
+            playSong(chartItems[prevIndex], prevIndex);
+        } else {
+            playSong(chartItems[chartItems.length - 1], chartItems.length - 1);
+        }
+    };
     return (
         <div className='Player__body'>
             <div className="Player__body-container">
@@ -93,9 +182,9 @@ export default function PlayerComponent() {
                         </div>
                         <div className="Player__playlist-liked">
                             <div className="Player__liked-items">
-                                {filteredLikedSongs.map((item) => {
+                                {filteredLikedSongs.map((item, index) => {
                                     return (
-                                        <div className="Player__liked-item" onClick={() => playSong(item)}>
+                                        <div className="Player__liked-item" onClick={() => playSong(item, index)}>
                                             <div className='Player__item-name' style={{ marginTop: '15px', width: '100%', cursor: 'pointer' }}>
                                                 <div>
                                                     <img src={item.img} alt="" />
@@ -144,7 +233,7 @@ export default function PlayerComponent() {
                                 {chartItems.map((item, index) => {
                                     return (
                                         <div className="Player__chart-item" key={index}>
-                                            <div onClick={() => playSong(item)} className='Player__item-content'>
+                                            <div onClick={() => playSong(item, index)} className='Player__item-content'>
                                                 <div className='Player__item-number'>0{item.id}</div>
                                                 <div className='Player__item-name'>
                                                     <div>
@@ -156,7 +245,7 @@ export default function PlayerComponent() {
                                                     </div>
                                                 </div>
                                                 <div className='Player__item-album'>{item.album}</div>
-                                                <div className='Player__item-time'>{item.time}</div>
+                                                <div className='Player__item-time'>{formatTime(item.time)}</div>
                                             </div>
                                             <div className='Player__item-like' onClick={() => saveSong(item)}>
                                                 <FavoriteIcon className={likedStatus[`${item.album}_${item.name}`] ? 'liked' : ''} />
@@ -204,7 +293,7 @@ export default function PlayerComponent() {
                 </div>
             </div>
             <div className={`Player__footer ${isActive ? 'active' : null}`}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div className='Player__item-name' style={{ width: '200px' }}>
                         <div>
                             <img src={currentSong.img} alt="" />
@@ -221,22 +310,50 @@ export default function PlayerComponent() {
                 <div className='Player__item-audio'>
                     <div className='Player__audio-btn'>
                         <button className='audio__btn-prev'>
-                            <ArrowBackIosNewIcon fontSize='small' />
+                            <ArrowBackIosNewIcon fontSize='small' onClick={playPreviousSong}/>
                         </button>
-                        <button className='audio__btn-start'>
-                            <PlayArrowIcon fontSize='large'/>
-                        </button>
-                        <button className='audio__btn-next'>
+                        <IconButton
+                            aria-label={paused ? 'play' : 'pause'}
+                            onClick={() => setPaused(!paused)}
+                        >
+                            {paused ? (
+                                <PlayArrowRounded
+                                    sx={{ fontSize: '2rem' }}
+                                />
+                            ) : (
+                                <PauseRounded sx={{ fontSize: '2rem' }} />
+                            )}
+                        </IconButton>
+                        <button className='audio__btn-next' onClick={playNextSong}>
                             <ArrowForwardIosIcon fontSize='small' />
                         </button>
                     </div>
-                    <LinearProgress variant="determinate" value={50} className='play__bar'/>
+                    <div className="audio__slider">
+                        <p>{formatDuration(position)}</p>
+                        <Slider className='play__bar'
+                            value={position}
+                            min={0}
+                            step={1}
+                            max={currentSong.time}
+                            onChange={(_, value) => {
+                                setPosition(value);
+                                audioRef.current.currentTime = value;
+                              }}
+                        />
+                        <p>{formatTime(currentSong.time)}</p>
+                    </div>
                 </div>
                 <div className="Player__item-volume">
-                    <div>
-                        <VolumeDownIcon />
+                    <div onClick={() => muteSong()}>
+                        {volume === 0 ? <VolumeMuteIcon /> : <VolumeDownIcon />}
                     </div>
-                        <LinearProgress variant="determinate" value={50} className='volume__bar'/>
+                    <Slider
+                        value={volume}
+                        min={0}
+                        max={100}
+                        onChange={handleVolumeChange}
+                        className='volume__bar'
+                    />
                 </div>
             </div>
         </div>
